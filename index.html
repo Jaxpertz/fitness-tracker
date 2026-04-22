@@ -8,6 +8,7 @@
         :root {
             --bg: #000; --card: #111; --text: #eee; --accent: #00e676;
             --day1: #2196f3; --day2: #ff9800; --rest: #444; --border: #222;
+            --gold: #ffd700;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
@@ -15,15 +16,17 @@
         .cal-container { background: var(--card); border-radius: 12px; padding: 10px; margin-bottom: 20px; border: 1px solid var(--border); }
         .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-        .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7em; background: #fff; color: #000; border: 1px solid transparent; font-weight: bold; }
+        .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7em; background: #fff; color: #000; border: 2px solid transparent; font-weight: bold; }
         .cal-label { text-align: center; color: #444; font-size: 0.6em; font-weight: bold; }
         
         .type-0 { background: var(--day1) !important; color: white; } 
         .type-1 { background: var(--day2) !important; color: white; } 
         .type-2 { background: var(--rest) !important; color: white; }  
         
-        .today { border: 2px solid var(--accent); }
-        .selected { outline: 2px solid #fff; z-index: 5; }
+        /* The automatic marker for today */
+        .today { border-color: var(--accent) !important; }
+        /* The manual marker for what you clicked */
+        .selected { outline: 3px solid var(--gold); z-index: 5; border-radius: 4px; }
         
         .workout-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-top: 4px solid #333; }
         .upper-line { border-color: var(--day1); }
@@ -131,7 +134,7 @@
         ['S','M','T','W','T','F','S'].forEach(l=>grid.innerHTML+=`<div class="cal-label">${l}</div>`);
         const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
         const days = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v8') || '{}');
         for(let i=0; i<first; i++) grid.innerHTML+='<div></div>';
         for(let d=1; d<=days; d++) {
             const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
@@ -145,11 +148,11 @@
     }
 
     function setType(type) {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v8') || '{}');
         const key = selectedDate.toDateString();
         if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '', supps: false };
         db[key].type = type;
-        localStorage.setItem('j_db_manual_v7', JSON.stringify(db));
+        localStorage.setItem('j_db_manual_v8', JSON.stringify(db));
         renderCal(); renderWorkout();
     }
 
@@ -167,7 +170,7 @@
     }
 
     function renderWorkout() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v8') || '{}');
         const data = db[selectedDate.toDateString()] || { type: null };
         const container = document.getElementById('workoutContent');
         container.innerHTML = '';
@@ -211,7 +214,7 @@
     function changeMonth(v) { viewDate.setMonth(viewDate.getMonth()+v); renderCal(); }
 
     function saveAll() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v8') || '{}');
         const key = selectedDate.toDateString();
         if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '', supps: false };
         db[key].w = document.getElementById('bodyWt').value;
@@ -220,12 +223,12 @@
         db[key].supps = document.getElementById('suppsYes').classList.contains('active');
         document.querySelectorAll('#workoutContent input').forEach(i=>db[key].t[i.id]=i.value);
         document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>db[key].d[i.id]=i.value);
-        localStorage.setItem('j_db_manual_v7', JSON.stringify(db));
+        localStorage.setItem('j_db_manual_v8', JSON.stringify(db));
         calc();
     }
 
     function loadAll() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v8') || '{}');
         const data = db[selectedDate.toDateString()] || {w:'', t:{}, d:{}, cardio: false, cardioType: '', supps: false};
         const bwt = document.getElementById('bodyWt'); if(bwt) bwt.value = data.w || '';
         document.getElementById('cardioYes').classList.toggle('active', data.cardio);
