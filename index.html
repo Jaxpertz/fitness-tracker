@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Optimal Manual Pro</title>
+    <style>
+        :root {
+            --bg: #000; --card: #111; --text: #eee; --accent: #00e676;
+            --day1: #2196f3; --day2: #ff9800; --rest: #444; --border: #222;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; }
+        
+        .cal-container { background: var(--card); border-radius: 12px; padding: 10px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+        .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 0.7em; background: #fff; color: #000; border: 1px solid transparent; font-weight: bold; }
+        .cal-label { text-align: center; color: #444; font-size: 0.6em; font-weight: bold; }
+        
+        .type-0 { background: var(--day1) !important; color: white; } 
+        .type-1 { background: var(--day2) !important; color: white; } 
+        .type-2 { background: var(--rest) !important; color: white; }  
+        
+        .today { border: 2px solid var(--accent); }
+        .selected { outline: 2px solid #fff; z-index: 5; }
+        
+        .workout-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-top: 4px solid #333; }
+        .upper-line { border-color: var(--day1); }
+        .lower-line { border-color: var(--day2); }
+        .rest-line { border-color: var(--rest); }
+        
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 14px 5px; border-bottom: 1px solid #222; font-size: 1em; }
+        input, select { background: #000; border: 1px solid #333; color: var(--accent); padding: 10px; border-radius: 6px; width: 85px; text-align: center; font-size: 1.1em; font-weight: bold; }
+        
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 2000; overflow-y: auto; padding: 15px; }
+        .overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .btn { border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; }
+        .pivot-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .stat-box { background: #111; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #222; margin-bottom: 10px;}
+        
+        /* Cardio Section */
+        .cardio-section { background: #1a1a1a; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .toggle-container { display: flex; justify-content: space-between; align-items: center; }
+        .toggle-group { display: flex; gap: 10px; }
+        .tgl-btn { padding: 8px 15px; border-radius: 5px; border: 1px solid #444; background: #000; color: #888; font-weight: bold; font-size: 0.8em; }
+        .tgl-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="cal-container">
+    <div class="cal-nav">
+        <button onclick="changeMonth(-1)" style="background:none; border:none; color:var(--accent); font-size:1.5em;">&lsaquo;</button>
+        <span id="monthLabel" style="font-weight:bold; font-size:0.8em; color:#888;"></span>
+        <button onclick="changeMonth(1)" style="background:none; border:none; color:var(--accent); font-size:1.5em;">&rsaquo;</button>
+    </div>
+    <div class="cal-grid" id="mainCal"></div>
+</div>
+
+<div id="workoutContent"></div>
+
+<div id="dietOverlay" class="overlay">
+    <div class="overlay-header">
+        <h2 id="dietDateLabel" style="margin:0; color:var(--accent);"></h2>
+        <button class="btn" style="background:var(--accent)" onclick="closeDiet()">DONE</button>
+    </div>
+    
+    <div style="color:#888; font-size:0.8em; margin-bottom:10px;">WORKOUT STATUS:</div>
+    <div class="pivot-btns">
+        <button class="btn" style="background:var(--day1); color:white;" onclick="setType(0)">Upper</button>
+        <button class="btn" style="background:var(--day2); color:white;" onclick="setType(1)">Lower</button>
+        <button class="btn" style="background:var(--rest); color:white;" onclick="setType(2)">Rest</button>
+        <button class="btn" style="background:#fff; color:#000;" onclick="setType(null)">Clear (Null)</button>
+    </div>
+
+    <div class="cardio-section">
+        <div class="toggle-container">
+            <span style="font-size: 0.9em; font-weight: bold;">20+ Mins Cardio?</span>
+            <div class="toggle-group">
+                <button id="cardioYes" class="tgl-btn" onclick="setCardio(true)">YES</button>
+                <button id="cardioNo" class="tgl-btn" onclick="setCardio(false)">NO</button>
+            </div>
+        </div>
+        <div id="cardioTypeContainer" style="display: none; margin-top: 12px;">
+            <select id="cardioType" style="width: 100%; color: #fff; text-align: left;" onchange="saveAll()">
+                <option value="">-- Choose Activity --</option>
+                <option value="biking">Biking</option>
+                <option value="walking">Walking</option>
+                <option value="running">Running</option>
+                <option value="sports">Sports</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <div class="stat-box"><small>CALS</small><br><span id="totalCals">0</span></div>
+        <div class="stat-box"><small>PROT</small><br><span id="totalProt">0</span></div>
+    </div>
+    <div class="stat-box"><small>BODY WEIGHT</small><input type="text" id="bodyWt" style="width:100%; border:none; background:none; color:var(--accent); text-align:center; font-size:1.5em;" oninput="saveAll()"></div>
+    <div id="mealContainer"></div>
+</div>
+
+<script>
+    let viewDate = new Date();
+    let selectedDate = new Date();
+    const routine = {
+        upper: [['Hammer Press','3x8-10'],['Hammer Row','3x10-12'],['Lat Pulldown','3x10-12'],['Cable Lat Raise','3x15-20'],['Face Pulls','3x15-20'],['Tricep Push','3x12-15'],['DB Curls','3x10-12']],
+        lower: [['Goblet Squat','3x10-12'],['Bulgarian SS','3x8-10'],['Dumbbell RDL','3x10-12'],['Leg Ext','4x12-15'],['Leg Curl','4x12-15'],['Calf Raise','4x15-20']]
+    };
+
+    function init() {
+        renderCal(); renderMeals(); renderWorkout(); loadAll();
+    }
+
+    function renderCal() {
+        const grid = document.getElementById('mainCal'); grid.innerHTML = '';
+        document.getElementById('monthLabel').innerText = viewDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+        ['S','M','T','W','T','F','S'].forEach(l=>grid.innerHTML+=`<div class="cal-label">${l}</div>`);
+        const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
+        const days = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        for(let i=0; i<first; i++) grid.innerHTML+='<div></div>';
+        for(let d=1; d<=days; d++) {
+            const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
+            const dStr = date.toDateString();
+            const type = db[dStr] ? db[dStr].type : null;
+            const typeClass = type !== null ? `type-${type}` : '';
+            const isToday = dStr === new Date().toDateString() ? 'today' : '';
+            const isSel = dStr === selectedDate.toDateString() ? 'selected' : '';
+            grid.innerHTML+=`<div class="cal-day ${typeClass} ${isToday} ${isSel}" onclick="openDate('${dStr}')">${d}</div>`;
+        }
+    }
+
+    function setType(type) {
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const key = selectedDate.toDateString();
+        if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '' };
+        db[key].type = type;
+        localStorage.setItem('j_db_manual_v3', JSON.stringify(db));
+        renderCal(); renderWorkout();
+    }
+
+    function setCardio(val) {
+        document.getElementById('cardioYes').classList.toggle('active', val);
+        document.getElementById('cardioNo').classList.toggle('active', !val);
+        document.getElementById('cardioTypeContainer').style.display = val ? 'block' : 'none';
+        saveAll();
+    }
+
+    function renderWorkout() {
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const data = db[selectedDate.toDateString()] || { type: null };
+        const container = document.getElementById('workoutContent');
+        container.innerHTML = '';
+        if(data.type === null) {
+            container.innerHTML = `<div class="workout-card"><h3>No Workout</h3><p style="color:#666">Click a date to assign type.</p></div>`;
+        } else if(data.type === 2) {
+            container.innerHTML = `<div class="workout-card rest-line"><h3>Rest Day</h3><p style="color:#666">Recovery Focus.</p></div>`;
+        } else {
+            const key = data.type === 0 ? 'upper' : 'lower';
+            let h = `<div class="workout-card ${key}-line"><h3>${key.toUpperCase()}</h3><table>`;
+            routine[key].forEach((ex, i) => {
+                h += `<tr><td>${ex[0]}<br><small style="color:#666">${ex[1]}</small></td><td><input type="text" id="ex_${key}_${i}" placeholder="lb" oninput="saveAll()"></td></tr>`;
+            });
+            container.innerHTML = h + `</table></div>`;
+        }
+        loadAll();
+    }
+
+    function renderMeals() {
+        const container = document.getElementById('mealContainer');
+        ['Breakfast', 'Lunch', 'Dinner', 'Snacks'].forEach(m => {
+            let h = `<div style="background:#111; padding:10px; border-radius:10px; margin-bottom:15px;"><h4>${m}</h4><table>`;
+            for(let i=0; i<8; i++) h += `<tr><td><input type="text" id="f_${m}_${i}_n" placeholder="Item" oninput="saveAll()" style="width:100%"></td><td style="width:60px"><input type="text" id="f_${m}_${i}_c" placeholder="Cal" oninput="saveAll()"></td><td style="width:50px"><input type="text" id="f_${m}_${i}_p" placeholder="P" oninput="saveAll()"></td></tr>`;
+            container.innerHTML += h + `</table></div>`;
+        });
+    }
+
+    function openDate(dStr) { selectedDate = new Date(dStr); renderCal(); renderWorkout(); document.getElementById('dietDateLabel').innerText = selectedDate.toLocaleDateString(); document.getElementById('dietOverlay').style.display='block'; loadAll(); }
+    function closeDiet() { document.getElementById('dietOverlay').style.display='none'; }
+    function changeMonth(v) { viewDate.setMonth(viewDate.getMonth()+v); renderCal(); }
+
+    function saveAll() {
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const key = selectedDate.toDateString();
+        if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '' };
+        db[key].w = document.getElementById('bodyWt').value;
+        db[key].cardio = document.getElementById('cardioYes').classList.contains('active');
+        db[key].cardioType = document.getElementById('cardioType').value;
+        document.querySelectorAll('#workoutContent input').forEach(i=>db[key].t[i.id]=i.value);
+        document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>db[key].d[i.id]=i.value);
+        localStorage.setItem('j_db_manual_v3', JSON.stringify(db));
+        calc();
+    }
+
+    function loadAll() {
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const data = db[selectedDate.toDateString()] || {w:'', t:{}, d:{}, cardio: false, cardioType: ''};
+        document.getElementById('bodyWt').value = data.w || '';
+        document.getElementById('cardioYes').classList.toggle('active', data.cardio);
+        document.getElementById('cardioNo').classList.toggle('active', !data.cardio);
+        document.getElementById('cardioTypeContainer').style.display = data.cardio ? 'block' : 'none';
+        document.getElementById('cardioType').value = data.cardioType || '';
+        document.querySelectorAll('#workoutContent input').forEach(i=>i.value=data.t[i.id]||'');
+        document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>i.value=data.d[i.id]||'');
+        calc();
+    }
+
+    function calc() {
+        let c=0, p=0;
+        document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>{
+            const v = parseFloat(i.value)||0;
+            if(i.id.includes('_c')) c+=v; if(i.id.includes('_p')) p+=v;
+        });
+        document.getElementById('totalCals').innerText = c;
+        const prot = document.getElementById('totalProt');
+        prot.innerText = p; prot.style.color = p>=155 ? 'var(--accent)' : '#ff5252';
+    }
+
+    init();
+    renderWorkout();
+</script>
+</body>
+</html>
