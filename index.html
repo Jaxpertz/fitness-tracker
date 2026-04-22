@@ -93,11 +93,11 @@
         </div>
     </div>
 
-    <div class="stat-box"><small>BODY WEIGHT</small><input type="text" id="bodyWt" style="width:100%; border:none; background:none; color:var(--accent); text-align:center; font-size:1.5em;" oninput="saveAll()"></div>
+    <div class="stat-box"><small>BODY WEIGHT</small><input type="number" inputmode="decimal" id="bodyWt" style="width:100%; border:none; background:none; color:var(--accent); text-align:center; font-size:1.5em;" oninput="saveAll()"></div>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
         <div class="stat-box"><small>CALS</small><br><span id="totalCals">0</span></div>
-        <div class="stat-box"><small>PROT</small><br><span id="totalProt">0</span></div>
+        <div class="stat-box"><small>PROTEIN (g)</small><br><span id="totalProt">0</span></div>
     </div>
 
     <div class="toggle-section">
@@ -131,7 +131,7 @@
         ['S','M','T','W','T','F','S'].forEach(l=>grid.innerHTML+=`<div class="cal-label">${l}</div>`);
         const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
         const days = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
         for(let i=0; i<first; i++) grid.innerHTML+='<div></div>';
         for(let d=1; d<=days; d++) {
             const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
@@ -145,11 +145,11 @@
     }
 
     function setType(type) {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
         const key = selectedDate.toDateString();
         if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '', supps: false };
         db[key].type = type;
-        localStorage.setItem('j_db_manual_v5', JSON.stringify(db));
+        localStorage.setItem('j_db_manual_v7', JSON.stringify(db));
         renderCal(); renderWorkout();
     }
 
@@ -167,7 +167,7 @@
     }
 
     function renderWorkout() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
         const data = db[selectedDate.toDateString()] || { type: null };
         const container = document.getElementById('workoutContent');
         container.innerHTML = '';
@@ -190,9 +190,20 @@
         const container = document.getElementById('mealContainer');
         ['Breakfast', 'Lunch', 'Dinner', 'Snacks'].forEach(m => {
             let h = `<div style="background:#111; padding:10px; border-radius:10px; margin-bottom:15px;"><h4>${m}</h4><table>`;
-            for(let i=0; i<8; i++) h += `<tr><td><input type="text" id="f_${m}_${i}_n" placeholder="Item" oninput="saveAll()" style="width:100%"></td><td style="width:60px"><input type="text" id="f_${m}_${i}_c" placeholder="Cal" oninput="saveAll()"></td><td style="width:50px"><input type="text" id="f_${m}_${i}_p" placeholder="P" oninput="saveAll()"></td></tr>`;
+            for(let i=0; i<8; i++) {
+                h += `<tr>
+                    <td><input type="text" id="f_${m}_${i}_n" placeholder="Item" oninput="saveAll()" style="width:100%"></td>
+                    <td style="width:60px"><input type="number" inputmode="numeric" pattern="\\d*" id="f_${m}_${i}_c" placeholder="Cal" oninput="validateInt(this)"></td>
+                    <td style="width:50px"><input type="number" inputmode="numeric" pattern="\\d*" id="f_${m}_${i}_p" placeholder="P" oninput="validateInt(this)"></td>
+                </tr>`;
+            }
             container.innerHTML += h + `</table></div>`;
         });
+    }
+
+    function validateInt(input) {
+        input.value = input.value.replace(/\D/g, '').replace(/^0+/, '');
+        saveAll();
     }
 
     function openDate(dStr) { selectedDate = new Date(dStr); renderCal(); renderWorkout(); document.getElementById('dietDateLabel').innerText = selectedDate.toLocaleDateString(); document.getElementById('dietOverlay').style.display='block'; loadAll(); }
@@ -200,7 +211,7 @@
     function changeMonth(v) { viewDate.setMonth(viewDate.getMonth()+v); renderCal(); }
 
     function saveAll() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
         const key = selectedDate.toDateString();
         if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '', supps: false };
         db[key].w = document.getElementById('bodyWt').value;
@@ -209,14 +220,14 @@
         db[key].supps = document.getElementById('suppsYes').classList.contains('active');
         document.querySelectorAll('#workoutContent input').forEach(i=>db[key].t[i.id]=i.value);
         document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>db[key].d[i.id]=i.value);
-        localStorage.setItem('j_db_manual_v5', JSON.stringify(db));
+        localStorage.setItem('j_db_manual_v7', JSON.stringify(db));
         calc();
     }
 
     function loadAll() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v7') || '{}');
         const data = db[selectedDate.toDateString()] || {w:'', t:{}, d:{}, cardio: false, cardioType: '', supps: false};
-        document.getElementById('bodyWt').value = data.w || '';
+        const bwt = document.getElementById('bodyWt'); if(bwt) bwt.value = data.w || '';
         document.getElementById('cardioYes').classList.toggle('active', data.cardio);
         document.getElementById('cardioNo').classList.toggle('active', !data.cardio);
         document.getElementById('cardioTypeContainer').style.display = data.cardio ? 'block' : 'none';
@@ -231,7 +242,7 @@
     function calc() {
         let c=0, p=0;
         document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>{
-            const v = parseFloat(i.value)||0;
+            const v = parseInt(i.value)||0;
             if(i.id.includes('_c')) c+=v; if(i.id.includes('_p')) p+=v;
         });
         document.getElementById('totalCals').innerText = c;
