@@ -40,8 +40,7 @@
         .pivot-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         .stat-box { background: #111; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #222; margin-bottom: 10px;}
         
-        /* Cardio Section */
-        .cardio-section { background: #1a1a1a; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .toggle-section { background: #1a1a1a; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333; }
         .toggle-container { display: flex; justify-content: space-between; align-items: center; }
         .toggle-group { display: flex; gap: 10px; }
         .tgl-btn { padding: 8px 15px; border-radius: 5px; border: 1px solid #444; background: #000; color: #888; font-weight: bold; font-size: 0.8em; }
@@ -75,7 +74,7 @@
         <button class="btn" style="background:#fff; color:#000;" onclick="setType(null)">Clear (Null)</button>
     </div>
 
-    <div class="cardio-section">
+    <div class="toggle-section">
         <div class="toggle-container">
             <span style="font-size: 0.9em; font-weight: bold;">20+ Mins Cardio?</span>
             <div class="toggle-group">
@@ -94,11 +93,23 @@
         </div>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+    <div class="stat-box"><small>BODY WEIGHT</small><input type="text" id="bodyWt" style="width:100%; border:none; background:none; color:var(--accent); text-align:center; font-size:1.5em;" oninput="saveAll()"></div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
         <div class="stat-box"><small>CALS</small><br><span id="totalCals">0</span></div>
         <div class="stat-box"><small>PROT</small><br><span id="totalProt">0</span></div>
     </div>
-    <div class="stat-box"><small>BODY WEIGHT</small><input type="text" id="bodyWt" style="width:100%; border:none; background:none; color:var(--accent); text-align:center; font-size:1.5em;" oninput="saveAll()"></div>
+
+    <div class="toggle-section">
+        <div class="toggle-container">
+            <span style="font-size: 0.75em; font-weight: bold; flex: 1; padding-right: 5px;">Took Vitamins/Supplements/Medications</span>
+            <div class="toggle-group">
+                <button id="suppsYes" class="tgl-btn" onclick="setSupps(true)">YES</button>
+                <button id="suppsNo" class="tgl-btn" onclick="setSupps(false)">NO</button>
+            </div>
+        </div>
+    </div>
+
     <div id="mealContainer"></div>
 </div>
 
@@ -120,7 +131,7 @@
         ['S','M','T','W','T','F','S'].forEach(l=>grid.innerHTML+=`<div class="cal-label">${l}</div>`);
         const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
         const days = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
         for(let i=0; i<first; i++) grid.innerHTML+='<div></div>';
         for(let d=1; d<=days; d++) {
             const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
@@ -134,11 +145,11 @@
     }
 
     function setType(type) {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
         const key = selectedDate.toDateString();
-        if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '' };
+        if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '', supps: false };
         db[key].type = type;
-        localStorage.setItem('j_db_manual_v3', JSON.stringify(db));
+        localStorage.setItem('j_db_manual_v5', JSON.stringify(db));
         renderCal(); renderWorkout();
     }
 
@@ -149,8 +160,14 @@
         saveAll();
     }
 
+    function setSupps(val) {
+        document.getElementById('suppsYes').classList.toggle('active', val);
+        document.getElementById('suppsNo').classList.toggle('active', !val);
+        saveAll();
+    }
+
     function renderWorkout() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
         const data = db[selectedDate.toDateString()] || { type: null };
         const container = document.getElementById('workoutContent');
         container.innerHTML = '';
@@ -183,26 +200,29 @@
     function changeMonth(v) { viewDate.setMonth(viewDate.getMonth()+v); renderCal(); }
 
     function saveAll() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
         const key = selectedDate.toDateString();
-        if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '' };
+        if(!db[key]) db[key] = { w: '', t: {}, d: {}, type: null, cardio: false, cardioType: '', supps: false };
         db[key].w = document.getElementById('bodyWt').value;
         db[key].cardio = document.getElementById('cardioYes').classList.contains('active');
         db[key].cardioType = document.getElementById('cardioType').value;
+        db[key].supps = document.getElementById('suppsYes').classList.contains('active');
         document.querySelectorAll('#workoutContent input').forEach(i=>db[key].t[i.id]=i.value);
         document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>db[key].d[i.id]=i.value);
-        localStorage.setItem('j_db_manual_v3', JSON.stringify(db));
+        localStorage.setItem('j_db_manual_v5', JSON.stringify(db));
         calc();
     }
 
     function loadAll() {
-        const db = JSON.parse(localStorage.getItem('j_db_manual_v3') || '{}');
-        const data = db[selectedDate.toDateString()] || {w:'', t:{}, d:{}, cardio: false, cardioType: ''};
+        const db = JSON.parse(localStorage.getItem('j_db_manual_v5') || '{}');
+        const data = db[selectedDate.toDateString()] || {w:'', t:{}, d:{}, cardio: false, cardioType: '', supps: false};
         document.getElementById('bodyWt').value = data.w || '';
         document.getElementById('cardioYes').classList.toggle('active', data.cardio);
         document.getElementById('cardioNo').classList.toggle('active', !data.cardio);
         document.getElementById('cardioTypeContainer').style.display = data.cardio ? 'block' : 'none';
         document.getElementById('cardioType').value = data.cardioType || '';
+        document.getElementById('suppsYes').classList.toggle('active', data.supps);
+        document.getElementById('suppsNo').classList.toggle('active', !data.supps);
         document.querySelectorAll('#workoutContent input').forEach(i=>i.value=data.t[i.id]||'');
         document.querySelectorAll('#dietOverlay input:not(#bodyWt)').forEach(i=>i.value=data.d[i.id]||'');
         calc();
